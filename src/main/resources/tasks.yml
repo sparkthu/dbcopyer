@@ -1,0 +1,42 @@
+debug: true
+tasks:
+  - id: taskxxx
+    source: clickhouse1
+    dest: mysql1
+    destTable: testtable
+    sourceSql: >
+      SELECT count(), appid from db.table
+      WHERE eventDate+1='{{.TODAY}}'
+      GROUP BY appid;
+    columns:
+      - name: count
+        indexInResult: 1
+        type: number		#actually just need number or string, when string, will wrap value with "'" in insert sql.
+      - name: appid
+#       indexInResult: 2    # when indexInResult absent, default by columns order
+        groovy: |
+          def convert(x) {   #in groovy script, convert function is needed, input is string, output is string
+            def map = ["unknown":"a", "news":"b"];
+            map.get(x) == null? x.toUpperCase(): x
+            }
+
+databases:
+  - id: mysql1
+    type: mysql
+    url: jdbc:mysql://localhost:3306/vtell_test
+    username: user
+    password: pass
+  - id: clickhouse1
+    type: clickhouse
+    url: jdbc:clickhouse://localhost:8123/db
+    username: user
+    password: pass
+
+  - id: output
+    type: file
+    filepath: ./output.txt
+    format: csv/sql/tsv
+
+  - id: console
+    type: console
+    format: sql
